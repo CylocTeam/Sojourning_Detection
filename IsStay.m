@@ -117,7 +117,7 @@ if isempty(section_idxs)
 else
     section_idxs = [1 , section_idxs , data_len];
 end
-timestamp(section_idxs)
+
 %% go through each section and decide isStay
 is_seperate_axis = [];  % should be realocated in other language
 is_abs_stay = [];       % should be realocated in other language
@@ -144,6 +144,7 @@ isStay = conv(double(isStay),filt_taps,'same');
 isStay(isStay > params.abrupt_pctg_th) = 1;
 isStay = logical(isStay);
 isStay(section_idxs(2:end)) = 0;  % force sectioning
+
 %% find start & end times
 is_toggle = diff([ 0 , isStay ]);
 
