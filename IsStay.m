@@ -75,18 +75,18 @@ Ndims = 3;                         % {x y z}
 %  purposed logic to be presented in v2.
 
 time_diffs_msec = diff(datenum(timestamp)) * 24 * 60 * 60 * 1e3;  % (datestr(timestamp),'dd-mmm-yyyy hh:MM:ss'));
-fs = mean( 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < params.max_time_gap_msec ));
+% fs = mean( 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < params.max_time_gap_msec ));
 
 % purposed - data driven
-%%%   max_time_gap_msec_pctl [double] - pctile of maximal allowed time gap
-%   fs = 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < prctile(time_diffs_msec, max_time_gap_msec_pctl) );
+%   max_time_gap_msec_pctl [double] - pctile of maximal allowed time gap
+  fs = 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < prctile(time_diffs_msec, max_time_gap_msec_pctl) );
 
 %% calc params in sample
 %  second2sample
 sec2smp = @(sec) floor(sec*fs);  % util function
 
-win_size_smp = sec2smp(params.win_size_sec);
-abrupt_filt_len = sec2smp(params.abrupt_filt_time_const);
+win_size_smp     = sec2smp(params.win_size_sec);
+abrupt_filt_size = sec2smp(params.abrupt_filt_time_const);
 
 %% optionally update var_th
 % vecnorm can be utilized starting from 2017b
@@ -94,7 +94,7 @@ acc_abs = sqrt(sum( acc_mat.^2 ,2));
 acc_movevar = movvar(acc_abs, win_size_smp);
 [hist_counts, hist_centers] = hist(acc_movevar,linspace(min(acc_movevar),max(acc_movevar),MAX_HIST_BINS));
 
-mvr_epdf = hist_counts / sum(hist_counts);
+mvr_epdf = hist_counts / sum(hist_counts); % normalize to pdf
 
 % alternatively 
 % mvr_ecdf = cumsum(hist_counts);
@@ -132,8 +132,7 @@ isStay = is_seperate_axis & is_abs_stay ;
 
 
 %% filter abrupt movements
-filt_size = sec2smp(params.abrupt_filt_time_const);
-filt_taps = ones(1,filt_size) / filt_size ;   % which is exacly mvmean, eh?
+filt_taps = ones(1,abrupt_filt_size) / abrupt_filt_size ;   % which is exacly mvmean, eh?
 
 isStay = conv(double(isStay),filt_taps,'same');
 % isStay = movmean(isStay,filt_size); % alternatively - will not work if
