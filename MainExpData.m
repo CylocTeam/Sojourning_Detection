@@ -14,6 +14,7 @@ params.abrupt_pctg_th = 0.2;
 params.min_stay_duration = 4;
 params.max_time_gap_msec = 1e3 * 5 / fs;
 params.max_section_gap_minutes = 7;
+params.max_time_gap_pctl = 60;
 
 %% read experiment acc. data
 
@@ -37,6 +38,10 @@ data_length = length(acc.x);
 tick_vec = linspace(0 , data_length/fs , data_length)';
 timestamp = t0 + duration(0,0,tick_vec);
 
+acc.x = [acc.x ; acc.x]; % read data from torso only
+acc.y = [acc.y ; acc.y];
+acc.z = [acc.z ; acc.z];
+timestamp = [ timestamp ; timestamp + duration(1,0,0) ];
 
 [isStay,stay_times,stay_durations] = IsStay(acc.x, acc.y, acc.z , timestamp, params);
 
