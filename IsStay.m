@@ -2,9 +2,9 @@ function [ isStay, stay_times, stay_durations ] = IsStay( accx, accy, accz, time
 % function detects human sojourning using mobile phone's accelarometer
 % recording.
 %  Inputs:
-%         accx          [Nx1 double]   - accelarometer vector along x axis
-%         accy          [Nx1 double]   - accelarometer vector along y axis
-%         accz          [Nx1 double]   - accelarometer vector along z axis
+%         accx          [Nx1 double]   - accelerometer vector along x axis
+%         accy          [Nx1 double]   - accelerometer vector along y axis
+%         accz          [Nx1 double]   - accelerometer vector along z axis
 %         timestamp     [Nx1 datetime] - time vector corresponding to acc.
 %         params        [1x1 struct]   - thresholds etc. regarding algorithm, as
 %                                        follows:
@@ -17,12 +17,13 @@ function [ isStay, stay_times, stay_durations ] = IsStay( accx, accy, accz, time
 %                                                           ^
 %                                                         isStay decision
 %
-%           max_time_gap_msec [dobule] - maximal time gap in miliseconds
-%                                        between foloowing timestamps for
-%                                        fs estimation
-%                      
+%           max_time_gap_pctl [double] - pctile of time gap distribution,
+%                                        in range [0 100]. Gaps longer then 
+%                                        gap corresponding to <max_time_gap_pctl> 
+%                                        will not take part in "fs" estimation
+%
 %           max_section_gap_minutes
-%                             [double] - maximal time gap between folloing
+%                             [double] - maximal time gap between following
 %                                        samples, to be considered as same
 %                                        section
 %           
@@ -31,7 +32,7 @@ function [ isStay, stay_times, stay_durations ] = IsStay( accx, accy, accz, time
 %                                        the moving variance of the signal
 % 
 %           var_th            [double] - moving variance threshold upon which
-%                                        sojourning decision is beeing made
+%                                        sojourning decision is being made
 %           
 %           abrupt_filt_time_const 
 %                             [double] - abrupt movement detection filter's
@@ -46,19 +47,20 @@ function [ isStay, stay_times, stay_durations ] = IsStay( accx, accy, accz, time
 %                                                 sample of ^ interest 
 %                                              | -- window of interest --- |   
 %
-%                                         then sample has '1' at 7/14=50% of its
-%                                         environment. samples with more
-%                                         than <abrupt_pctg_th> (not in
-%                                         [%]) will become '1'
+%                                        then sample has '1' at 7/14=50% of its
+%                                        environment. samples with more
+%                                        than <abrupt_pctg_th> (not in
+%                                        [%]) will become '1'
 %
-%           min_stay_duration [double] - minimal sojourning duration in minutes.
+%           min_stay_duration_minutes 
+%                             [double] - minimal sojourning duration in minutes.
 %                                        shorter detected sojourns are to
 %                                        disqualified.
 %                                          
 %
 %
 % Outputs:
-%       isStay          [Nx1 bol]      - bolean vector indicating sample sojourning
+%       isStay          [Nx1 bool]      - Boolean vector indicating sample sojourning
 %       stay_times      [Mx2 datetime] - sojourning edges if exist, empty otherwise
 %       stay_durations  [Mx1 datetime] - sojourning durations if exist, empty otherwise
 %
@@ -67,6 +69,7 @@ function [ isStay, stay_times, stay_durations ] = IsStay( accx, accy, accz, time
 MAX_HIST_BINS = 1e4;
 data_len = length(timestamp);
 var_th = params.var_th;
+max_time_gap_pctl = params.max_time_gap_pctl;
 acc_mat = [ accx , accy , accz ];  % stacking
 Ndims = 3;                         % {x y z}
 
@@ -78,8 +81,7 @@ time_diffs_msec = diff(datenum(timestamp)) * 24 * 60 * 60 * 1e3;  % (datestr(tim
 % fs = mean( 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < params.max_time_gap_msec ));
 
 % purposed - data driven
-%   max_time_gap_msec_pctl [double] - pctile of maximal allowed time gap
-  fs = 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < prctile(time_diffs_msec, max_time_gap_msec_pctl) );
+fs = mean(1e3 * 1 ./ time_diffs_msec( time_diffs_msec < prctile(time_diffs_msec, max_time_gap_pctl) ));
 
 %% calc params in sample
 %  second2sample
@@ -112,13 +114,15 @@ section_idxs = find( time_diffs_msec > params.max_section_gap_minutes*60*1e3 );
 
 if isempty(section_idxs)
     section_idxs = [1 data_len];
+else
+    section_idxs = [1 , section_idxs , data_len];
 end
-
+timestamp(section_idxs)
 %% go through each section and decide isStay
 is_seperate_axis = [];  % should be realocated in other language
 is_abs_stay = [];       % should be realocated in other language
-for isect=1:size(section_idxs,1)
-    curr_section_idxs = section_idxs(isect,1) : section_idxs(isect,2) ;
+for isect=1:length(section_idxs)-1
+    curr_section_idxs = section_idxs(isect) : section_idxs(isect+1) ;
     curr_acc_mat = acc_mat(curr_section_idxs);
     curr_acc_abs = sqrt(sum(curr_acc_mat.^2,2)); 
     mvr_mat = movvar(curr_acc_mat, win_size_smp, 0, 1);
@@ -130,7 +134,6 @@ for isect=1:size(section_idxs,1)
 end
 isStay = is_seperate_axis & is_abs_stay ;
 
-
 %% filter abrupt movements
 filt_taps = ones(1,abrupt_filt_size) / abrupt_filt_size ;   % which is exacly mvmean, eh?
 
@@ -139,9 +142,8 @@ isStay = conv(double(isStay),filt_taps,'same');
 %                                     % weigthed mean desired
 
 isStay(isStay > params.abrupt_pctg_th) = 1;
-
 isStay = logical(isStay);
-
+isStay(section_idxs(2:end)) = 0;  % force sectioning
 %% find start & end times
 is_toggle = diff([ 0 , isStay ]);
 
