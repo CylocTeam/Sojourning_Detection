@@ -1,5 +1,4 @@
-addpath(genpath('C:\Projects\Sojourning_Detection'))
-acc_data_dir = 'C:\Users\david\Desktop\isStay\data\a02\p1';
+acc_data_dir = fullfile(pwd, '..', 'data\a02\p3');
 
 %% try dummy input
 
@@ -29,8 +28,8 @@ for j=1:length(sortby)
     curr_file = fullfile(acc_data_dir,all_segments(sortby(j)).name);
     data_tbl = readtable(curr_file);
     acc.x = [acc.x ; data_tbl.Var1]; % read data from torso only
-    acc.y = [acc.y ; data_tbl.Var1];
-    acc.z = [acc.z ; data_tbl.Var1];
+    acc.y = [acc.y ; data_tbl.Var2];
+    acc.z = [acc.z ; data_tbl.Var3];
 end
 
 %% create time vector
@@ -41,10 +40,8 @@ timestamp = t0 + duration(0,0,tick_vec);
 acc.x = [acc.x ; acc.x]; % read data from torso only
 acc.y = [acc.y ; acc.y];
 acc.z = [acc.z ; acc.z];
-timestamp = [ timestamp ; timestamp + duration(1,0,0) ];
+timestamp = [timestamp ; timestamp + duration(1,0,0)];
 
 [isStay,stay_times,stay_durations] = IsStay(acc.x, acc.y, acc.z , timestamp, params);
-
-
 
 

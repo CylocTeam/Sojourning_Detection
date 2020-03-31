@@ -157,7 +157,7 @@ if ~isempty(start_times) && ( isempty(end_times) || ( start_times(end) > end_tim
 end
 
 stay_times = [ start_times , end_times ];
-stay_durations = diff(stay_times);
+stay_durations = stay_times(:,2) - stay_times(:,1);
 
 %% cancle short sojourns
 is_short_stay = stay_durations < duration(0,params.min_stay_duration,0);
