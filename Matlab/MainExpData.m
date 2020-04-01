@@ -43,7 +43,7 @@ acc.x = [acc.x ; acc.x]; % read data from torso only
 acc.y = [acc.y ; acc.y];
 acc.z = [acc.z ; acc.z];
 timestamp = [timestamp ; timestamp + duration(1,0,0)];
-fmt = 'HH:mm:ss.SSSSSS'; %expilictly micro-seconds
+fmt = 'HH:mm:ss.SSSSSSSSS'; %expilictly micro-seconds
 timestamp = datetime(timestamp, 'Format', fmt);
 %% export
 % data = timetable(timestamp, acc.x, acc.y, acc.z,'VariableNames',{'timestamp','x','y','z'},'TimeStep',seconds(0.001));
