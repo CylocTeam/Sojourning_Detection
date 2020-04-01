@@ -43,11 +43,12 @@ acc.x = [acc.x ; acc.x]; % read data from torso only
 acc.y = [acc.y ; acc.y];
 acc.z = [acc.z ; acc.z];
 timestamp = [timestamp ; timestamp + duration(1,0,0)];
-
+timestamp = datetime(timestamp, 'Format', fmt);
 %% export
-data = table(acc.x, acc.y, acc.z , timestamp,'VariableNames',{'x','y','z','timestamp'});
+% data = timetable(timestamp, acc.x, acc.y, acc.z,'VariableNames',{'timestamp','x','y','z'},'TimeStep',seconds(0.001));
+data = timetable(timestamp, acc.x, acc.y, acc.z,'VariableNames',{'x','y','z'});
 file_name = [replace(acc_file_dir,'\','_'), '.csv'];
-writetable(data,[root_data_dir, file_name])
+writetimetable(data,[root_data_dir, file_name])
 
 %% run IsStay
 [isStay,stay_times,stay_durations] = IsStay(data.x, data.y, data.z , data.timestamp, params);
