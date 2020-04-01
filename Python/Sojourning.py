@@ -11,7 +11,7 @@ def find_stays(accx, accy, accz, timestamp, params):
     var_th = params["var_th"]
     acc_mat = [accx , accy , accz]  # stacking
 
-    # print(acc_mat)
+    print(acc_mat)
 
 
 
@@ -19,7 +19,7 @@ def find_stays(accx, accy, accz, timestamp, params):
 
 if __name__ == "__main__":
     df = pd.read_csv("../data/a02_p3.csv")
-    print(df.head())
+    # print(df.head())
 
     fs = 25 #[Hz]
     params = {"win_size_sec": 3,
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     "max_section_gap_minutes": 7,
     "max_time_gap_pctl": 60}
 
-    print(params)
+    # print(params)
 
     # is_stay, stay_times, stay_durations = find_stays(df.x, df.y, df.z, df.timestamp, params)
     find_stays(df.x, df.y, df.z, df.timestamp, params)
