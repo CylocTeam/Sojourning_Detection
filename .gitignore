@@ -1,2 +1,9 @@
-
+# matlab
 *.asv
+
+# vscode
+.vscode/
+.idea/
+
+# data files
+data/
