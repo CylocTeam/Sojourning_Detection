@@ -1,38 +1,59 @@
 import numpy as np
 import pandas as pd
 
-def find_stays(accx, accy, accz, timestamp, params):
-    # unpack & definitions
-    MAX_HIST_BINS = 1e4
-    DATA_LEN = len(timestamp)
-    MAX_TIME_GAP_PCTL = params["max_time_gap_pctl"]
-    NUN_DIMS = 3 # {x y z}
-    
-    var_th = params["var_th"]
-    acc_mat = [accx , accy , accz]  # stacking
 
-    print(acc_mat)
+class Sojourning:
+    def __init__(self, df):
+        self.set_transform_df(df)
 
+    def get_section_slice(self, section_start, section_end):
+        return self.df.loc[section_start:section_end].iloc[:-1]
 
+    def set_transform_df(self, df):
+        df = df.sort_index()
+        df["norm"] = df.apply(
+            lambda row: np.sqrt(row.x ** 2 + row.y ** 2 + row.z ** 2), axis=1
+        )
+        df["diff_ns"] = np.insert(
+            np.diff(df.index.to_numpy().astype("float64")), 0, None
+        ).astype("int64")
+        df["is_stay"] = False
+        self.df = df
 
+    def find_sections_idx(self, params):
+        # max_section_gap = np.array(params["max_section_gap_minutes"], dtype='timedelta64[m]')
+        time_diffs_ns = self.df.diff_ns
+        max_section_gap_ns = params.max_section_gap.astype("timedelta64[ns]").astype(
+            "int64"
+        )
 
+        section_idxs_list = time_diffs_ns[
+            time_diffs_ns > max_section_gap_ns
+        ].index.to_list()
 
-if __name__ == "__main__":
-    df = pd.read_csv("../data/a02_p3.csv")
-    # print(df.head())
+        section_idxs_list.insert(0, time_diffs_ns.index[0])
+        section_idxs_list.append(time_diffs_ns.index[-1])
+        return pd.to_datetime(section_idxs_list)
 
-    fs = 25 #[Hz]
-    params = {"win_size_sec": 3,
-    "ecdf_diff_th": 0.01,
-    "var_th": 0.05,
-    "abrupt_filt_time_const": 10,
-    "abrupt_pctg_th": 0.2,
-    "min_stay_duration": 4,
-    "max_time_gap_msec": 1e3 * 5 / fs,
-    "max_section_gap_minutes": 7,
-    "max_time_gap_pctl": 60}
+    @staticmethod
+    def calc_stay_raw(df, win_size_smp, var_th, num_dims=3):
+        df_rollvar = df.rolling(win_size_smp, min_periods=0).var()
+        is_axis_stay = df_rollvar[["x", "y", "z"]] < var_th / num_dims
+        is_norm_stay = df_rollvar["norm"] < var_th
+        is_stay = is_axis_stay.all(axis=1) & is_norm_stay
+        # is_stay.name = "is_stay"
+        return is_stay
 
-    # print(params)
+    def set_is_stay(self, is_stay):
+        self.df.loc[is_stay.index, "is_stay"] = is_stay
 
-    # is_stay, stay_times, stay_durations = find_stays(df.x, df.y, df.z, df.timestamp, params)
-    find_stays(df.x, df.y, df.z, df.timestamp, params)
+    def filter_abrupt_movements(self, abrupt_filt_size, abrupt_pctg_th):
+        soft_stay = self.df.is_stay.rolling(abrupt_filt_size, min_periods=0).mean()
+        self.df.is_stay = soft_stay > abrupt_pctg_th
+
+    def find_time_tags(self):
+        toggle_indicator = self.df.is_stay.astype(int).diff()
+        start_times = toggle_indicator[toggle_indicator == 1].index
+        toggle_indicator = toggle_indicator.shift(-1)
+        end_times = toggle_indicator[toggle_indicator == -1].index
+        return start_times, end_times

@@ -12,7 +12,7 @@ params.ecdf_diff_th = 0.01;
 params.var_th = 0.05;
 params.abrupt_filt_time_const = 10;
 params.abrupt_pctg_th = 0.2;
-params.min_stay_duration = 4;
+params.min_stay_duration = 1;
 params.max_time_gap_msec = 1e3 * 5 / fs;
 params.max_section_gap_minutes = 7;
 params.max_time_gap_pctl = 60;
@@ -43,13 +43,14 @@ acc.x = [acc.x ; acc.x]; % read data from torso only
 acc.y = [acc.y ; acc.y];
 acc.z = [acc.z ; acc.z];
 timestamp = [timestamp ; timestamp + duration(1,0,0)];
-fmt = 'HH:mm:ss.SSSSSSSSS'; %expilictly micro-seconds
+fmt = 'HH:mm:ss.SSSSSSSSS'; %expilictly nano-seconds
 timestamp = datetime(timestamp, 'Format', fmt);
 %% export
 % data = timetable(timestamp, acc.x, acc.y, acc.z,'VariableNames',{'timestamp','x','y','z'},'TimeStep',seconds(0.001));
 data = timetable(timestamp, acc.x, acc.y, acc.z,'VariableNames',{'x','y','z'});
 file_name = [replace(acc_file_dir,'\','_'), '.csv'];
-writetimetable(data,[root_data_dir, file_name])
+% writetimetable(data,[root_data_dir, file_name])
 
 %% run IsStay
+data = readtable([root_data_dir, file_name]);
 [isStay,stay_times,stay_durations] = IsStay(data.x, data.y, data.z , data.timestamp, params);
