@@ -4,14 +4,24 @@ import pandas as pd
 
 class Params:
     def __init__(self, params_init):
-        self.win_size_sec = params_init["win_size_sec"]
+        self.max_time_gap_pctl = params_init["max_time_gap_pctl"]
         self.ecdf_diff_th = params_init["ecdf_diff_th"]
         self.var_th = params_init["var_th"]
-        self.abrupt_filt_const_sec = params_init["abrupt_filt_const_sec"]
-        self.min_stay_duration = params_init["min_stay_duration_m"]
-        self.max_time_gap = params_init["max_time_gap_nsec"]
-        self.max_section_gap = params_init["max_section_gap_m"]
-        self.max_time_gap_pctl = params_init["max_time_gap_pctl"]
+        self.abrupt_pctg_th = params_init["abrupt_pctg_th"]
+
+        self.max_time_gap = np.array(
+            params_init["max_time_gap_msec"], dtype="timedelta64[ms]"
+        )
+        self.win_size = np.array(params_init["win_size_sec"], dtype="timedelta64[s]")
+        self.abrupt_filt_const = np.array(
+            params_init["abrupt_filt_const_sec"], dtype="timedelta64[s]"
+        )
+        self.min_stay_duration = np.array(
+            params_init["min_stay_duration_m"], dtype="timedelta64[m]"
+        )
+        self.max_section_gap = np.array(
+            params_init["max_section_gap_m"], dtype="timedelta64[m]"
+        )
 
         self._MAX_HIST_BINS = int(1e4)
         self._fs = 0
@@ -32,10 +42,14 @@ class Params:
         )
 
     def convert_filters_sec2smp(self, time_diffs):
-        self._fs = _set_avg_sample_rate(time_diffs)
+        self._set_avg_sample_rate(time_diffs)
         sec2smp = lambda sec: np.floor(sec * self.fs).astype("int")
-        self.win_size_smp = sec2smp(self.win_size_sec)
-        self.abrupt_filt_size = sec2smp(self.abrupt_filt_const_sec)
+        self.win_size_smp = sec2smp(
+            self.win_size.astype("timedelta64[s]").astype("float")
+        )
+        self.abrupt_filt_size = sec2smp(
+            self.abrupt_filt_const.astype("timedelta64[s]").astype("float")
+        )
 
     def set_var_th(self, acc_abs):
         acc_rollvar = acc_abs.rolling(self.win_size_smp, min_periods=0).var()
