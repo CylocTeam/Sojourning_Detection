@@ -5,18 +5,8 @@ from sojourning import Sojourning
 
 #### OUTSIDE ###
 def read_config():
-    config_dict = {
-        "win_size_sec": 3,
-        "ecdf_diff_th": 0.01,
-        "var_th": 0.05,
-        "abrupt_filt_const_sec": 10,
-        "abrupt_pctg_th": 0.2,
-        "min_stay_duration_m": 1,
-        "max_time_gap_msec": 200,
-        "max_section_gap_m": 7,
-        "max_time_gap_pctl": 60,
-    }
-    return config_dict
+    df = pd.read_csv("../config.csv")
+    return pd.Series(df.value.values, index=df.name).to_dict()
 
 
 def read_csv():
@@ -63,7 +53,7 @@ stays["duration"] = stays.apply(
 # cancle short stays
 stays.drop(stays[stays.duration <= params.min_stay_duration].index, inplace=True)
 
-# display output
+### display output
 import plotly.express as px
 
 print(stays)

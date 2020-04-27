@@ -10,17 +10,19 @@ class Params:
         self.abrupt_pctg_th = params_init["abrupt_pctg_th"]
 
         self.max_time_gap = np.array(
-            params_init["max_time_gap_msec"], dtype="timedelta64[ms]"
+            np.round(params_init["max_time_gap_msec"]), dtype="timedelta64[ms]"
         )
-        self.win_size = np.array(params_init["win_size_sec"], dtype="timedelta64[s]")
+        self.win_size = np.array(
+            np.round(params_init["win_size_sec"]), dtype="timedelta64[s]"
+        )
         self.abrupt_filt_const = np.array(
-            params_init["abrupt_filt_const_sec"], dtype="timedelta64[s]"
+            np.round(params_init["abrupt_filt_const_sec"]), dtype="timedelta64[s]"
         )
         self.min_stay_duration = np.array(
-            params_init["min_stay_duration_m"], dtype="timedelta64[m]"
+            np.round(params_init["min_stay_duration_m"]), dtype="timedelta64[m]"
         )
         self.max_section_gap = np.array(
-            params_init["max_section_gap_m"], dtype="timedelta64[m]"
+            np.round(params_init["max_section_gap_m"]), dtype="timedelta64[m]"
         )
 
         self._MAX_HIST_BINS = int(1e4)
@@ -63,7 +65,3 @@ class Params:
         if not knee_th.size:
             return
         self.var_th = float(min([self.var_th, knee_th]))
-
-
-if __name__ == "__main__":
-    pass
