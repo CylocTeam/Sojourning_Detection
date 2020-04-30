@@ -143,8 +143,8 @@ isStay = conv(double(isStay),filt_taps,'same');
 % isStay = movmean(isStay,filt_size); % alternatively - will not work if
 %                                     % weigthed mean desired
 
-isStay(isStay > params.abrupt_pctg_th) = 1;
-isStay = logical(isStay);
+isStay = (isStay > params.abrupt_pctg_th);
+
 isStay(section_idxs(2:end)) = 0;  % force sectioning
 
 %% find start & end times
