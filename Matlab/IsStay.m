@@ -77,11 +77,12 @@ Ndims = 3;                         % {x y z}
 %  filter outliers
 %  purposed logic to be presented in v2.
 
-time_diffs_msec = diff(datenum(timestamp)) * 24 * 60 * 60 * 1e3;  % (datestr(timestamp),'dd-mmm-yyyy hh:MM:ss'));
+time_diffs_msec = diff(datenum(timestamp)) * 24 * 60 * 60 * 1e3;  
 % fs = mean( 1e3 * 1 ./ time_diffs_msec( time_diffs_msec < params.max_time_gap_msec ));
 
 % purposed - data driven
-fs = mean(1e3 * 1 ./ time_diffs_msec( time_diffs_msec < prctile(time_diffs_msec, max_time_gap_pctl) ));
+fs = mean(1e3 * 1 ./ time_diffs_msec( time_diffs_msec < prctile(time_diffs_msec,...
+    max_time_gap_pctl) ));
 
 %% calc params in sample
 %  second2sample
@@ -94,7 +95,8 @@ abrupt_filt_size = sec2smp(params.abrupt_filt_time_const);
 % vecnorm can be utilized starting from 2017b
 acc_abs = sqrt(sum( acc_mat.^2 ,2));
 acc_movevar = movvar(acc_abs, win_size_smp);
-[hist_counts, hist_centers] = hist(acc_movevar,linspace(min(acc_movevar),max(acc_movevar),MAX_HIST_BINS));
+[hist_counts, hist_centers] = hist(acc_movevar,linspace(min(acc_movevar),...
+    max(acc_movevar),MAX_HIST_BINS));
 
 mvr_epdf = hist_counts / sum(hist_counts); % normalize to pdf
 
@@ -123,7 +125,7 @@ is_seperate_axis = [];  % should be realocated in other language
 is_abs_stay = [];       % should be realocated in other language
 for isect=1:length(section_idxs)-1
     curr_section_idxs = section_idxs(isect) : section_idxs(isect+1) ;
-    curr_acc_mat = acc_mat(curr_section_idxs);
+    curr_acc_mat = acc_mat(curr_section_idxs,:);
     curr_acc_abs = sqrt(sum(curr_acc_mat.^2,2)); 
     mvr_mat = movvar(curr_acc_mat, win_size_smp, 0, 1);
     mvr_abs = movvar(curr_acc_abs, win_size_smp);
@@ -141,8 +143,8 @@ isStay = conv(double(isStay),filt_taps,'same');
 % isStay = movmean(isStay,filt_size); % alternatively - will not work if
 %                                     % weigthed mean desired
 
-isStay(isStay > params.abrupt_pctg_th) = 1;
-isStay = logical(isStay);
+isStay = (isStay > params.abrupt_pctg_th);
+
 isStay(section_idxs(2:end)) = 0;  % force sectioning
 
 %% find start & end times
@@ -151,13 +153,14 @@ is_toggle = diff([ 0 , isStay ]);
 start_times = timestamp(is_toggle == 1);
 end_times   = timestamp(is_toggle == -1);
 
-if ~isempty(start_times) && ( isempty(end_times) || ( start_times(end) > end_times(end)))  % means sojourn eccourd
-                                                               % until end of data 
+if ~isempty(start_times) && ( isempty(end_times)...
+    || ( start_times(end) > end_times(end)))  % means sojourn eccourd
+                                                  % until end of data 
    end_times = [end_times ; timestamp(end)];
 end
 
 stay_times = [ start_times , end_times ];
-stay_durations = diff(stay_times);
+stay_durations = stay_times(:,2) - stay_times(:,1);
 
 %% cancle short sojourns
 is_short_stay = stay_durations < duration(0,params.min_stay_duration,0);
