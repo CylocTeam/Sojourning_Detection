@@ -37,7 +37,7 @@ class Sojourning:
 
     @staticmethod
     def calc_stay_raw(df, win_size_smp, var_th, num_dims=3):
-        df_rollvar = df.rolling(win_size_smp, min_periods=0).var()
+        df_rollvar = df.rolling(win_size_smp, min_periods=0, center=True).var()
         is_axis_stay = df_rollvar[["x", "y", "z"]] < var_th / num_dims
         is_norm_stay = df_rollvar["norm"] < var_th
         is_stay = is_axis_stay.all(axis=1) & is_norm_stay
@@ -48,7 +48,9 @@ class Sojourning:
         self.df.loc[is_stay.index, "is_stay"] = is_stay
 
     def filter_abrupt_movements(self, abrupt_filt_size, abrupt_pctg_th):
-        soft_stay = self.df.is_stay.rolling(abrupt_filt_size, min_periods=0).mean()
+        soft_stay = self.df.is_stay.rolling(
+            abrupt_filt_size, min_periods=0, center=True
+        ).mean()
         self.df.is_stay = soft_stay > abrupt_pctg_th
 
     def find_time_tags(self):
