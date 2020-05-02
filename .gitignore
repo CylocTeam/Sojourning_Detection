@@ -12,6 +12,7 @@ data/
 .pytest_cache/
 
 # Python Distribution / packaging
+*.pyc
 .Python
 build/
 develop-eggs/
